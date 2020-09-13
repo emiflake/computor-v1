@@ -7,6 +7,7 @@ import qualified Tag
 import qualified Expr
 import qualified Reduce
 import qualified Util
+import qualified SolveM
 
 main :: IO ()
 main = pure ()

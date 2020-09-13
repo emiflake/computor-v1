@@ -27,9 +27,14 @@ dependencies:
 - containers
 - prettyprinter == 1.7.*
 - prettyprinter-ansi-terminal
+- mtl
+- transformers
 
 library:
   source-dirs: src
+
+default-extensions:
+- OverloadedStrings
 
 executables:
   computor-v1-exe:

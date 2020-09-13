@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: db277576a0c20979d2a8d75ddc30d2d7e5c1534712e779465feb10991ea63fc6
+-- hash: 791f1622a915f1e9951d5026caca9f26b74539161178db4943ee5a65804af522
 
 name:           computor-v1
 version:        0.1.0.0
@@ -29,20 +29,26 @@ library
   exposed-modules:
       Expr
       Reduce
+      Solve
+      Solve.Reduce
+      SolveM
       Tag
       Util
   other-modules:
       Paths_computor_v1
   hs-source-dirs:
       src
+  default-extensions: OverloadedStrings
   build-depends:
       base >=4.7 && <5
     , containers
     , lens
+    , mtl
     , parsec
     , prettyprinter ==1.7.*
     , prettyprinter-ansi-terminal
     , text
+    , transformers
   default-language: Haskell2010
 
 executable computor-v1-exe
@@ -51,16 +57,19 @@ executable computor-v1-exe
       Paths_computor_v1
   hs-source-dirs:
       app
+  default-extensions: OverloadedStrings
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
     , computor-v1
     , containers
     , lens
+    , mtl
     , parsec
     , prettyprinter ==1.7.*
     , prettyprinter-ansi-terminal
     , text
+    , transformers
   default-language: Haskell2010
 
 test-suite computor-v1-test
@@ -70,14 +79,17 @@ test-suite computor-v1-test
       Paths_computor_v1
   hs-source-dirs:
       test
+  default-extensions: OverloadedStrings
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
     , computor-v1
     , containers
     , lens
+    , mtl
     , parsec
     , prettyprinter ==1.7.*
     , prettyprinter-ansi-terminal
     , text
+    , transformers
   default-language: Haskell2010

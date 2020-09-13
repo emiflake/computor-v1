@@ -1,45 +1,17 @@
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE ViewPatterns #-}
-module Reduce where
+module Solve.Reduce where
 
 import Control.Applicative
+import Control.Monad.Except
 
-import Prelude hiding (span)
-import Debug.Trace as Debug
-import qualified Tag
-import qualified Expr
-import Expr (Expr', Expr, ExprL', ExprL)
 import Prettyprinter
 import Prettyprinter.Render.Terminal
 
-data ExecutionError
-  = DivideBy0 Tag.Span Tag.Span Tag.Span
-  deriving (Show, Eq)
+import Expr
+import qualified Tag
 
-showError :: Expr -> ExecutionError -> Doc AnsiStyle
-showError srcExpr (DivideBy0 span@(Tag.Span (Tag.Position l c) _) lhs rhs) =
-  "Reduction error caused by divide by 0 at " <> pretty span <> hardline
-  <> hardline
-  <> "When dividing" <> hardline
-  <> hardline
-  <> indent 4 (annotate (color Blue) (pretty (Expr.smallestContainingSpan lhs srcExpr))) <> hardline
-  <> hardline
-  <> "by" <> hardline
-  <> hardline
-  <> indent 4 (annotate (color Blue) (pretty (Expr.smallestContainingSpan rhs srcExpr))) <+> "... which evaluates to 0" <> hardline
-  <> hardline
-  <> hardline <>
-  (case Expr.line l srcExpr of
-    Just line ->
-      "starting on line" <+> pretty l <+> "column" <+> pretty c <> ":" <> hardline
-      <> hardline
-      <> (indent 4 (Expr.prettyAnnotateSpan span (color Red) line)) <> hardline
-    Nothing -> 
-      emptyDoc
-  )
+import SolveM
 
-
--- INVARIANT: It's safe to assume for division, b is non-zero
 runOp :: Expr.Op -> Double -> Double -> Double
 runOp op a b =
   case op of
@@ -49,28 +21,11 @@ runOp op a b =
     Expr.Div -> a / b
     Expr.Pow -> a ** b
 
+reorder :: Expr -> SolveM Expr
+reorder =
+  pure . Expr.fromExprL . Expr.toExprL
 
--- TODO: Find out how to use Writer Monad for pretty log of reduction steps, which is a bonus for the project.
-
-reduceEquation :: Expr.Equation -> Either ExecutionError Expr.EquationL
-reduceEquation (Expr.Equation lhs rhs) =
-  liftA2 Expr.EquationL (reduce lhs) (reduce rhs)
-
-reduceEquationL :: Expr.EquationL -> Either ExecutionError Expr.EquationL
-reduceEquationL (Expr.EquationL (Expr.fromExprL -> lhs) (Expr.fromExprL -> rhs)) =
-  liftA2 Expr.EquationL (reduce lhs) (reduce rhs)
-
-
-reduce :: Expr -> Either ExecutionError ExprL
-reduce e = do
-  v <- Reduce.reduce1 e
-  v' <- Reduce.reduce1 (Expr.fromExprL (Expr.toExprL v))
-  pure (Expr.toExprL v')
-
-
--- Simple 2-consideration reduction
--- Primarily responsible for getting the easy stuff out of the way.
-reduce1 :: Expr -> Either ExecutionError Expr
+reduce1 :: Expr -> SolveM Expr
 reduce1 = \case
   (Tag.At span (Expr.BinOp op lhs rhs)) -> do
     candidate <- liftA2 (,) (reduce1 lhs) (reduce1 rhs)
@@ -108,7 +63,7 @@ reduce1 = \case
 
       -- /0
       (_, (Tag.At lhsSpan _, Tag.At rhsSpan (Expr.LitNum 0))) | op == Expr.Div ->
-        Left (DivideBy0 span lhsSpan rhsSpan)
+        divideBy0 span lhsSpan rhsSpan
 
       -- X - X
       (Expr.Sub, (lhs', rhs')) | lhs' Expr.~= rhs' ->

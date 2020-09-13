@@ -1,6 +1,5 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE LambdaCase #-}
@@ -19,7 +18,7 @@ import Control.Applicative
 import Control.Monad (void)
 import Data.Functor
 
-import Control.Lens
+import Control.Lens hiding (op)
 
 import Text.Parsec hiding ((<|>), many)
 import Text.Parsec.Text
@@ -56,6 +55,8 @@ data Expr'
 
 type ExprL = Tag.Spanned ExprL'
 
+
+-- TODO: rename away from BinOpL, it's clearly not a *binary operation* anymore
 data ExprL'
   = FreeVarL (Identifier 'FreeScope)
   | LitNumL  Double
@@ -63,7 +64,7 @@ data ExprL'
   deriving (Show, Eq)
 
 instance Ord ExprL' where
-  LitNumL _ <= _ = True 
+  LitNumL _ <= _ = True
   FreeVarL _ <= FreeVarL _ = True
   FreeVarL _ <= BinOpL _ _ = True
   _ <= _ = False
@@ -97,6 +98,8 @@ fromExprL (Tag.At span exprL) = case exprL of
   BinOpL op (h :| t) -> 
     foldl (\acc v -> Tag.At span $ BinOp op acc (fromExprL v)) (fromExprL h) t
 
+
+-- Equal by ignoring spans
 (~=) :: Expr -> Expr -> Bool
 (Tag.At _ (FreeVar v)) ~= (Tag.At _ (FreeVar v')) = v == v'
 (Tag.At _ (LitNum d)) ~= (Tag.At _ (LitNum d')) = d == d'
@@ -111,7 +114,7 @@ line n full@(Tag.At exprSpan e) =
   else
     case e of
       (BinOp _ lhs rhs) -> Expr.line n lhs <|> Expr.line n rhs
-      a -> Nothing
+      _ -> Nothing
 
 smallestContainingSpan :: Tag.Span -> Expr -> Maybe Expr
 smallestContainingSpan span full@(Tag.At exprSpan e) =
@@ -121,8 +124,8 @@ smallestContainingSpan span full@(Tag.At exprSpan e) =
   else
     case e of
       (BinOp _ lhs rhs) -> smallestContainingSpan span lhs <|> smallestContainingSpan span rhs
-      a -> Nothing
-  
+      _ -> Nothing
+
 -- PARSE
 
 {-| INVARIANT: free identifiers are only represented by capital X

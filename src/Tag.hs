@@ -1,7 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE OverloadedStrings #-}
 module Tag where
 
 import Prelude hiding (span)
@@ -43,7 +42,7 @@ data Spanned a
 instance Ord a => Ord (Spanned a) where
   compare (At _ a) (At _ b) =
     compare a b
-    
+
 
 span :: Lens' (Spanned a) Span
 span = lens (\(At s _) -> s) (\(At _ v) s -> At s v)
@@ -64,10 +63,6 @@ fullyInLine l (Span f t) = inLine l f && inLine l t
 positionIn :: Position -> Span -> Bool
 positionIn p (Span f t) =
   f <= p && p <= t
-
-spanIn :: Span -> Span -> Bool
-spanIn (Span f t) s =
-  positionIn f s && positionIn t s
 
 mergeSpans :: Span -> Span -> Span
 mergeSpans (Span start _) (Span _ end) =
