@@ -9,7 +9,7 @@ import Prelude hiding (span)
 import Debug.Trace as Debug
 import qualified Tag
 import qualified Expr
-import Expr (Expr', Expr)
+import Expr (Expr', Expr, ExprL', ExprL)
 import Prettyprinter
 import Prettyprinter.Render.Terminal
 
@@ -18,8 +18,8 @@ data ExecutionError
   deriving (Show, Eq)
 
 showError :: Expr -> ExecutionError -> Doc AnsiStyle
-showError srcExpr (DivideBy0 span@(Tag.Span (Tag.Position l c) (Tag.Position _ c')) lhs rhs) =
-  "Execution error caused by divide by 0 at " <> pretty span <> hardline
+showError srcExpr (DivideBy0 span@(Tag.Span (Tag.Position l c) _) lhs rhs) =
+  "Reduction error caused by divide by 0 at " <> pretty span <> hardline
   <> hardline
   <> "When dividing" <> hardline
   <> hardline
@@ -39,7 +39,8 @@ showError srcExpr (DivideBy0 span@(Tag.Span (Tag.Position l c) (Tag.Position _ c
       emptyDoc
   )
 
--- It's safe to assume for division, b is non-zero
+
+-- INVARIANT: It's safe to assume for division, b is non-zero
 runOp :: Expr.Op -> Double -> Double -> Double
 runOp op a b =
   case op of
@@ -48,6 +49,25 @@ runOp op a b =
     Expr.Mul -> a * b
     Expr.Div -> a / b
     Expr.Pow -> a ** b
+
+
+-- TODO: Find out how to use Writer Monad for pretty log of reduction steps, which is a bonus for the project.
+
+reduceEquation :: Expr.Equation -> Either ExecutionError Expr.EquationL
+reduceEquation (Expr.Equation lhs rhs) =
+  liftA2 Expr.EquationL (reduce lhs) (reduce rhs)
+
+reduceEquationL :: Expr.EquationL -> Either ExecutionError Expr.EquationL
+reduceEquationL (Expr.EquationL (Expr.fromExprL -> lhs) (Expr.fromExprL -> rhs)) =
+  liftA2 Expr.EquationL (reduce lhs) (reduce rhs)
+
+
+reduce :: Expr -> Either ExecutionError ExprL
+reduce e = do
+  v <- Reduce.reduce1 e
+  v' <- Reduce.reduce1 (Expr.fromExprL (Expr.toExprL v))
+  pure (Expr.toExprL v')
+
 
 -- Simple 2-consideration reduction
 reduce1 :: Expr -> Either ExecutionError Expr
@@ -68,7 +88,7 @@ reduce1 = \case
 
       -- ^0
       (Expr.Pow, (lhs', (Tag.At _ (Expr.LitNum 0)))) ->
-        pure $ Tag.At span (Expr.LitNum 0)
+        pure $ Tag.At span (Expr.LitNum 1)
 
       -- /1
       (Expr.Div, (lhs', (Tag.At _ (Expr.LitNum 1)))) ->
@@ -76,10 +96,10 @@ reduce1 = \case
 
       -- *1
       (Expr.Mul, ((Tag.At _ (Expr.LitNum 1)), rhs')) ->
-        pure $ rhs'
+        reduce1 $ rhs'
 
       (Expr.Mul, (lhs', (Tag.At _ (Expr.LitNum 1)))) ->
-        pure $ lhs'
+        reduce1 $ lhs'
 
       -- *0
       (Expr.Mul, ((Tag.At _ lhs'), (Tag.At _ rhs')))
@@ -96,7 +116,11 @@ reduce1 = \case
 
       -- X * X
       (Expr.Mul, (lhs', rhs')) | lhs' Expr.~= rhs' ->
-        pure $ Tag.At span (Expr.BinOp Expr.Pow lhs' (Tag.At span (Expr.LitNum 2)))
+        reduce1 $ Tag.At span (Expr.BinOp Expr.Pow lhs' (Tag.At span (Expr.LitNum 2)))
+
+      -- X + X
+      (Expr.Add, (lhs', rhs')) | lhs' Expr.~= rhs' ->
+        reduce1 $ Tag.At span (Expr.BinOp Expr.Mul lhs' (Tag.At span (Expr.LitNum 2)))
 
       -- Multiplication transitivity
       (_, (Tag.At s  (Expr.BinOp Expr.Mul (Tag.At _ (Expr.LitNum ma)) v),

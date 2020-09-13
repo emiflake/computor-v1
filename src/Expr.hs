@@ -4,10 +4,15 @@
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE ViewPatterns #-}
 module Expr where
 
 import Data.Text (Text)
 import qualified Data.Text as Text
+
+import qualified Data.List.NonEmpty as NonEmpty
+import Data.List.NonEmpty (NonEmpty(..))
 
 import Data.Foldable
 import Control.Applicative
@@ -27,6 +32,10 @@ import Prettyprinter
 
 data Equation =
   Equation Expr Expr
+  deriving (Show, Eq)
+
+data EquationL =
+  EquationL ExprL ExprL
   deriving (Show, Eq)
 
 data Scope = TermScope | TypeScope | FreeScope
@@ -50,8 +59,43 @@ type ExprL = Tag.Spanned ExprL'
 data ExprL'
   = FreeVarL (Identifier 'FreeScope)
   | LitNumL  Double
-  | BinOpL Op [ExprL]
-  deriving (Show, Ord, Eq)
+  | BinOpL Op (NonEmpty ExprL)
+  deriving (Show, Eq)
+
+instance Ord ExprL' where
+  LitNumL _ <= _ = True 
+  FreeVarL _ <= FreeVarL _ = True
+  FreeVarL _ <= BinOpL _ _ = True
+  _ <= _ = False
+
+toExprL :: Expr -> ExprL
+toExprL = fmap \case
+  FreeVar i -> FreeVarL i
+  LitNum  d -> LitNumL  d
+  -- FIXME: reduce duplication
+  BinOp   Add lhs rhs ->
+    case (toExprL lhs, toExprL rhs) of
+      (Tag.At _ (BinOpL Add lhs'), Tag.At _ (BinOpL Add rhs')) -> BinOpL Add (lhs' <> rhs')
+      (Tag.At _ (BinOpL Add lhs'), rhs') -> BinOpL Add (lhs' <> (rhs' :| []))
+      (lhs', Tag.At _ (BinOpL Add rhs')) -> BinOpL Add (lhs' NonEmpty.<| rhs')
+      (lhs', rhs') -> BinOpL Add (lhs' :| [rhs'])
+  BinOp   Mul lhs rhs ->
+    case (toExprL lhs, toExprL rhs) of
+      (Tag.At _ (BinOpL Mul lhs'), Tag.At _ (BinOpL Mul rhs')) -> BinOpL Mul (lhs' <> rhs')
+      (Tag.At _ (BinOpL Mul lhs'), rhs') -> BinOpL Mul (lhs' <> (rhs' :| []))
+      (lhs', Tag.At _ (BinOpL Mul rhs')) -> BinOpL Mul (lhs' NonEmpty.<| rhs')
+      (lhs', rhs') -> BinOpL Mul (lhs' :| [rhs'])
+  BinOp   op lhs rhs ->
+    BinOpL op (toExprL lhs :| [toExprL rhs])
+
+fromExprL :: ExprL -> Expr
+fromExprL (Tag.At span exprL) = case exprL of
+  FreeVarL i -> Tag.At span $ FreeVar i
+  LitNumL d -> Tag.At span $ LitNum d
+  BinOpL op (NonEmpty.sort -> h :| t) | op `elem` [Add, Mul] -> 
+    foldl (\acc v -> Tag.At span $ BinOp op acc (fromExprL v)) (fromExprL h) t
+  BinOpL op (h :| t) -> 
+    foldl (\acc v -> Tag.At span $ BinOp op acc (fromExprL v)) (fromExprL h) t
 
 (~=) :: Expr -> Expr -> Bool
 (Tag.At _ (FreeVar v)) ~= (Tag.At _ (FreeVar v')) = v == v'
@@ -209,3 +253,14 @@ prettyAnnotateSpan span ann full@(Tag.At exprSpan e) =
 instance Pretty Equation where
   pretty (Equation lhs rhs) =
     pretty lhs <> softline <> "=" <> softline <> pretty rhs
+
+instance Pretty EquationL where
+  pretty (EquationL lhs rhs) =
+    pretty lhs <> softline <> "=" <> softline <> pretty rhs
+
+instance Pretty ExprL' where
+  pretty = \case
+    FreeVarL ident -> pretty ident
+    LitNumL  double -> pretty double
+    BinOpL op terms ->
+      "(" <> (align . sep . zipWith (<>) (emptyDoc : repeat (pretty op <> " ")) . fmap pretty $ NonEmpty.toList terms) <> ")"

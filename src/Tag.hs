@@ -38,10 +38,18 @@ data Span =
 
 data Spanned a
   = At Span a
-  deriving (Show, Ord, Eq, Functor)
+  deriving (Show, Eq, Functor)
+
+instance Ord a => Ord (Spanned a) where
+  compare (At _ a) (At _ b) =
+    compare a b
+    
 
 span :: Lens' (Spanned a) Span
 span = lens (\(At s _) -> s) (\(At _ v) s -> At s v)
+
+unspan :: Spanned a -> Span
+unspan = view span
 
 at :: Position -> Position -> a -> Spanned a
 at f t =
