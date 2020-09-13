@@ -27,7 +27,7 @@ reorder =
 
 reduce1 :: Expr -> SolveM Expr
 reduce1 = \case
-  (Tag.At span (Expr.BinOp op lhs rhs)) -> do
+  a@(Tag.At span (Expr.BinOp op lhs rhs)) -> do
     candidate <- liftA2 (,) (reduce1 lhs) (reduce1 rhs)
     case (op, candidate) of
       -- +0 or -0
@@ -63,7 +63,7 @@ reduce1 = \case
 
       -- /0
       (_, (Tag.At lhsSpan _, Tag.At rhsSpan (Expr.LitNum 0))) | op == Expr.Div ->
-        divideBy0 span lhsSpan rhsSpan
+        divideBy0 a span lhsSpan rhsSpan
 
       -- X - X
       (Expr.Sub, (lhs', rhs')) | lhs' Expr.~= rhs' ->

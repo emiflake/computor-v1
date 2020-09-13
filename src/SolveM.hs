@@ -20,12 +20,34 @@ import Control.Monad.Except
 -- Rule-based system for solution with steps in between being optionally reported with pretty log
 
 data SolveError
-  = DivideBy0 Equation Tag.Span Tag.Span Tag.Span -- Solving failed because divide by 0 was encountered somewhere along the way
+  = DivideBy0 Expr Tag.Span Tag.Span Tag.Span -- Solving failed because divide by 0 was encountered somewhere along the way
   deriving (Show, Eq)
 
-divideBy0 :: Tag.Span -> Tag.Span -> Tag.Span -> SolveM a
-divideBy0 full lhs rhs =
-  throwError =<< DivideBy0 <$> ask <*> (pure full) <*> (pure lhs) <*> (pure rhs)
+prettyError (DivideBy0 srcExpr span@(Tag.Span (Tag.Position l c) _) lhs rhs) =
+    "Reduction error caused by divide by 0 at " <> pretty span <> hardline
+    <> hardline
+    <> "When dividing" <> hardline
+    <> hardline
+    <> indent 4 (annotate (color Blue) (pretty (Expr.smallestContainingSpan lhs srcExpr))) <> hardline
+    <> hardline
+    <> "by" <> hardline
+    <> hardline
+    <> indent 4 (annotate (color Blue) (pretty (Expr.smallestContainingSpan rhs srcExpr))) <+> "... which evaluates to 0" <> hardline
+    <> hardline
+    <> hardline <>
+    (case Expr.line l srcExpr of
+      Just line ->
+        "starting on line" <+> pretty l <+> "column" <+> pretty c <> ":" <> hardline
+        <> hardline
+        <> (indent 4 (Expr.prettyAnnotateSpan span (color Red) line)) <> hardline
+      Nothing -> 
+        emptyDoc
+    )
+    
+
+divideBy0 :: Expr -> Tag.Span -> Tag.Span -> Tag.Span -> SolveM a
+divideBy0 expr full lhs rhs =
+  throwError $ DivideBy0 expr full lhs rhs
 
 -- Stack explanation:
 --   Writer -> Log = [Doc ann]
