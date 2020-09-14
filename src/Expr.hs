@@ -103,7 +103,7 @@ fromExprL (Tag.At span exprL) = case exprL of
 (~=) :: Expr -> Expr -> Bool
 (Tag.At _ (FreeVar v)) ~= (Tag.At _ (FreeVar v')) = v == v'
 (Tag.At _ (LitNum d)) ~= (Tag.At _ (LitNum d')) = d == d'
-(Tag.At _ (BinOp op lhs rhs)) ~= (Tag.At _ (BinOp op' lhs' rhs')) = op == op' && lhs ~= lhs && rhs ~= rhs
+(Tag.At _ (BinOp op lhs rhs)) ~= (Tag.At _ (BinOp op' lhs' rhs')) = op == op' && lhs ~= lhs' && rhs ~= rhs'
 _ ~= _ = False
 
 line :: Int -> Expr -> Maybe Expr

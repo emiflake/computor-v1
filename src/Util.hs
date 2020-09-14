@@ -1,7 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 module Util where
 
-
 import Control.Monad.State
 
 import Data.Text (Text)
@@ -15,19 +14,26 @@ import Prettyprinter.Render.Terminal
 import SolveM
 import Solve.Reduce
 import Solve.Tactics
+import Solve.Solution
 
 -- Utility functions for GHCi
 
-lemma :: SolveM ()
+lemma :: SolveM (Maybe Solution)
 lemma = do
   SolveM.log $ "Starting solution tactic 'lemma'" <> hardline
   putCurrentState
+  SolveM.log $ "Reduce both sides" <> hardline
   operateOnSide Both $ reduce1 >=> reorder >=> reduce1
   putCurrentState
+  SolveM.log $ "Move all terms to rhs" <> hardline
   allToLeft
   putCurrentState
+  SolveM.log $ "Reduce both sides" <> hardline
   operateOnSide Both $ reduce1 >=> reorder >=> reduce1
   putCurrentState
+  solvable <- identifySolvable
+  -- SolveM.log $ pretty (show solvable) <> hardline
+  pure $ fmap solve solvable
 
 
 
@@ -36,7 +42,8 @@ solveAST text =
   case Expr.runParserE Expr.equation text of
     Right eq ->
       runSolveM eq lemma >>= \case
-        Right v -> print v
+        Right (Just sol) -> putDoc $ prettySolution sol
+        Right Nothing -> putDoc $ "no solution was found..."
         Left e -> putDoc (prettyError e)
     Left e -> print e
 
@@ -79,3 +86,4 @@ solveAST text =
 --   hardline <>
 --   indent 24 (vsep [ "|" , "v" ]) <> hardline <>
 --   hardline
+

@@ -16,25 +16,14 @@ import qualified Tag
 
 import SolveM
 
+
 introduceAdd :: ExprL -> ExprL
 introduceAdd =
   \case
     a@(Tag.At _ (Expr.BinOpL Expr.Add vs)) -> a
     a@(Tag.At s i) -> Tag.At s (Expr.BinOpL Expr.Add (a :| []))
 
-negExpr :: ExprL -> ExprL
-negExpr e@(Tag.At s _) = Tag.At s (Expr.BinOpL Expr.Mul (e :| [Tag.At s (Expr.LitNumL (-1.0))]))
-  
-allToLeft' :: Tag.Span -> (NonEmpty ExprL, NonEmpty ExprL) -> Expr.EquationL
-allToLeft' s (lhs@(x :| xs), y :| ys) =
-  let
-    finalized =
-        (x :| xs) <> fmap negExpr (y :| ys)
-  in
-  Expr.EquationL
-    (Tag.At s (Expr.BinOpL Expr.Add finalized))
-    (Tag.At (foldl1 Tag.mergeSpans $ fmap Tag.unspan (y :| ys)) (Expr.LitNumL 0))
-
+-- Moves all terms from rhs to lhs of equation
 allToLeft :: SolveM ()
 allToLeft = do
   Equation lhs rhs <- get
@@ -42,4 +31,18 @@ allToLeft = do
   let (EquationL lhs'' rhs'') = allToLeft' s (lhs', rhs')
   put $ Equation (fromExprL lhs'') (fromExprL rhs'')
 
-  
+  where
+
+    negExpr :: ExprL -> ExprL
+    negExpr e@(Tag.At s _) = Tag.At s (Expr.BinOpL Expr.Mul (e :| [Tag.At s (Expr.LitNumL (-1.0))]))
+
+    allToLeft' :: Tag.Span -> (NonEmpty ExprL, NonEmpty ExprL) -> Expr.EquationL
+    allToLeft' s (lhs@(x :| xs), y :| ys) =
+      let
+        finalized =
+            (x :| xs) <> fmap negExpr (y :| ys)
+      in
+      Expr.EquationL
+        (Tag.At s (Expr.BinOpL Expr.Add finalized))
+        (Tag.At (foldl1 Tag.mergeSpans $ fmap Tag.unspan (y :| ys)) (Expr.LitNumL 0))
+

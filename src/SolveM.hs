@@ -23,37 +23,18 @@ data SolveError
   = DivideBy0 Expr Tag.Span Tag.Span Tag.Span -- Solving failed because divide by 0 was encountered somewhere along the way
   deriving (Show, Eq)
 
-prettyError (DivideBy0 srcExpr span@(Tag.Span (Tag.Position l c) _) lhs rhs) =
-    "Reduction error caused by divide by 0 at " <> pretty span <> hardline
-    <> hardline
-    <> "When dividing" <> hardline
-    <> hardline
-    <> indent 4 (annotate (color Blue) (pretty (Expr.smallestContainingSpan lhs srcExpr))) <> hardline
-    <> hardline
-    <> "by" <> hardline
-    <> hardline
-    <> indent 4 (annotate (color Blue) (pretty (Expr.smallestContainingSpan rhs srcExpr))) <+> "... which evaluates to 0" <> hardline
-    <> hardline
-    <> hardline <>
-    (case Expr.line l srcExpr of
-      Just line ->
-        "starting on line" <+> pretty l <+> "column" <+> pretty c <> ":" <> hardline
-        <> hardline
-        <> (indent 4 (Expr.prettyAnnotateSpan span (color Red) line)) <> hardline
-      Nothing -> 
-        emptyDoc
-    )
-    
-
-divideBy0 :: Expr -> Tag.Span -> Tag.Span -> Tag.Span -> SolveM a
-divideBy0 expr full lhs rhs =
-  throwError $ DivideBy0 expr full lhs rhs
-
 -- Stack explanation:
 --   Writer -> Log = [Doc ann]
 --   Reader -> Source 'Equation' AST
 --   State  -> Current Equation
 --   Except -> Throw execution error
+
+-- TODO: Possible idea:
+-- newtype SolveM c a
+--   where `c` is the current candidate, and provide traversal functions, such that you can switch from candidate
+--   e.g. Equation -> EquationL
+--   this allows for more flexibility with creating tactics and cleaner code.
+--   Possibly makes this entire thing extensible to ComputorV2
 
 newtype SolveM a =
   SolveM
@@ -113,3 +94,26 @@ putCurrentState =
 -- isSolvable :: SolveM Bool
 
 -- solve :: SolveM Solution
+
+-- Prettify the error message
+
+prettyError (DivideBy0 srcExpr span@(Tag.Span (Tag.Position l c) _) lhs rhs) =
+    "Reduction error caused by divide by 0 at " <> pretty span <> hardline
+    <> hardline
+    <> "When dividing" <> hardline
+    <> hardline
+    <> indent 4 (annotate (color Blue) (pretty (Expr.smallestContainingSpan lhs srcExpr))) <> hardline
+    <> hardline
+    <> "by" <> hardline
+    <> hardline
+    <> indent 4 (annotate (color Blue) (pretty (Expr.smallestContainingSpan rhs srcExpr))) <+> "... which evaluates to 0" <> hardline
+    <> hardline
+    <> hardline <>
+    (case Expr.line l srcExpr of
+      Just line ->
+        "starting on line" <+> pretty l <+> "column" <+> pretty c <> ":" <> hardline
+        <> hardline
+        <> (indent 4 (Expr.prettyAnnotateSpan span (color Red) line)) <> hardline
+      Nothing -> 
+        emptyDoc
+    )

@@ -47,6 +47,9 @@ instance Ord a => Ord (Spanned a) where
 span :: Lens' (Spanned a) Span
 span = lens (\(At s _) -> s) (\(At _ v) s -> At s v)
 
+unwrapSpanned :: Spanned a -> a
+unwrapSpanned (At _ a) = a
+
 unspan :: Spanned a -> Span
 unspan = view span
 
