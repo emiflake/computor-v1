@@ -30,6 +30,7 @@ lemma = do
   putCurrentState
   SolveM.log $ "Reduce both sides" <> hardline
   operateOnSide Both $ reduce1 >=> reorder >=> reduce1
+  operateOnSide Both $ reduce1 >=> reorder >=> reduce1
   putCurrentState
   solvable <- identifySolvable
   -- SolveM.log $ pretty (show solvable) <> hardline

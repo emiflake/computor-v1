@@ -111,7 +111,7 @@ accumulateTerms = do
   -- SolveM.log $ "Accumulating terms" <> hardline
   Equation (toExprL -> lhs) rhs <- get
   case introduceAdd lhs of
-    Tag.At _ (BinOpL Add terms) -> do
+    Tag.At _ (AppL Add terms) -> do
       case traverse (toTerm . fromExprL) terms of
         Left e -> do
           -- SolveM.log $ pretty (show e) <> hardline

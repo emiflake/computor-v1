@@ -15,7 +15,6 @@ import Data.List.NonEmpty (NonEmpty(..))
 
 import Data.Foldable
 import Control.Applicative
-import Control.Monad (void)
 import Data.Functor
 
 import Control.Lens hiding (op)
@@ -55,18 +54,17 @@ data Expr'
 
 type ExprL = Tag.Spanned ExprL'
 
-
--- TODO: rename away from BinOpL, it's clearly not a *binary operation* anymore
+-- TODO: rename away from AppL, it's clearly not a *binary operation* anymore
 data ExprL'
   = FreeVarL (Identifier 'FreeScope)
   | LitNumL  Double
-  | BinOpL Op (NonEmpty ExprL)
+  | AppL Op (NonEmpty ExprL)
   deriving (Show, Eq)
 
 instance Ord ExprL' where
   LitNumL _ <= _ = True
   FreeVarL _ <= FreeVarL _ = True
-  FreeVarL _ <= BinOpL _ _ = True
+  FreeVarL _ <= AppL _ _ = True
   _ <= _ = False
 
 toExprL :: Expr -> ExprL
@@ -76,26 +74,26 @@ toExprL = fmap \case
   -- FIXME: reduce duplication
   BinOp   Add lhs rhs ->
     case (toExprL lhs, toExprL rhs) of
-      (Tag.At _ (BinOpL Add lhs'), Tag.At _ (BinOpL Add rhs')) -> BinOpL Add (lhs' <> rhs')
-      (Tag.At _ (BinOpL Add lhs'), rhs') -> BinOpL Add (lhs' <> (rhs' :| []))
-      (lhs', Tag.At _ (BinOpL Add rhs')) -> BinOpL Add (lhs' NonEmpty.<| rhs')
-      (lhs', rhs') -> BinOpL Add (lhs' :| [rhs'])
+      (Tag.At _ (AppL Add lhs'), Tag.At _ (AppL Add rhs')) -> AppL Add (lhs' <> rhs')
+      (Tag.At _ (AppL Add lhs'), rhs') -> AppL Add (lhs' <> (rhs' :| []))
+      (lhs', Tag.At _ (AppL Add rhs')) -> AppL Add (lhs' NonEmpty.<| rhs')
+      (lhs', rhs') -> AppL Add (lhs' :| [rhs'])
   BinOp   Mul lhs rhs ->
     case (toExprL lhs, toExprL rhs) of
-      (Tag.At _ (BinOpL Mul lhs'), Tag.At _ (BinOpL Mul rhs')) -> BinOpL Mul (lhs' <> rhs')
-      (Tag.At _ (BinOpL Mul lhs'), rhs') -> BinOpL Mul (lhs' <> (rhs' :| []))
-      (lhs', Tag.At _ (BinOpL Mul rhs')) -> BinOpL Mul (lhs' NonEmpty.<| rhs')
-      (lhs', rhs') -> BinOpL Mul (lhs' :| [rhs'])
+      (Tag.At _ (AppL Mul lhs'), Tag.At _ (AppL Mul rhs')) -> AppL Mul (lhs' <> rhs')
+      (Tag.At _ (AppL Mul lhs'), rhs') -> AppL Mul (lhs' <> (rhs' :| []))
+      (lhs', Tag.At _ (AppL Mul rhs')) -> AppL Mul (lhs' NonEmpty.<| rhs')
+      (lhs', rhs') -> AppL Mul (lhs' :| [rhs'])
   BinOp   op lhs rhs ->
-    BinOpL op (toExprL lhs :| [toExprL rhs])
+    AppL op (toExprL lhs :| [toExprL rhs])
 
 fromExprL :: ExprL -> Expr
 fromExprL (Tag.At span exprL) = case exprL of
   FreeVarL i -> Tag.At span $ FreeVar i
   LitNumL d -> Tag.At span $ LitNum d
-  BinOpL op (NonEmpty.sort -> h :| t) | op `elem` [Add, Mul] -> 
+  AppL op (NonEmpty.sort -> h :| t) | op `elem` [Add, Mul] -> 
     foldl (\acc v -> Tag.At span $ BinOp op acc (fromExprL v)) (fromExprL h) t
-  BinOpL op (h :| t) -> 
+  AppL op (h :| t) -> 
     foldl (\acc v -> Tag.At span $ BinOp op acc (fromExprL v)) (fromExprL h) t
 
 
@@ -265,5 +263,5 @@ instance Pretty ExprL' where
   pretty = \case
     FreeVarL ident -> pretty ident
     LitNumL  double -> pretty double
-    BinOpL op terms ->
+    AppL op terms ->
       "(" <> (align . sep . zipWith (<>) (emptyDoc : repeat (pretty op <> " ")) . fmap pretty $ NonEmpty.toList terms) <> ")"

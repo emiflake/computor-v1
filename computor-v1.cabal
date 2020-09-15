@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4663d0f6cbb35047b696d096e5237ed3c1013b8216554a6d1e6c3d6faf68598e
+-- hash: 01ce88be125d7830d1d550baf67a58f87b4a5ee7a40ee9f0472fe08ccc9a32c9
 
 name:           computor-v1
 version:        0.1.0.0
@@ -29,7 +29,6 @@ library
   exposed-modules:
       Expr
       Reduce
-      Solve
       Solve.Reduce
       Solve.Solution
       Solve.Tactics

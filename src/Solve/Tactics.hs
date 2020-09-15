@@ -20,21 +20,21 @@ import SolveM
 introduceAdd :: ExprL -> ExprL
 introduceAdd =
   \case
-    a@(Tag.At _ (Expr.BinOpL Expr.Add vs)) -> a
-    a@(Tag.At s i) -> Tag.At s (Expr.BinOpL Expr.Add (a :| []))
+    a@(Tag.At _ (Expr.AppL Expr.Add vs)) -> a
+    a@(Tag.At s i) -> Tag.At s (Expr.AppL Expr.Add (a :| []))
 
 -- Moves all terms from rhs to lhs of equation
 allToLeft :: SolveM ()
 allToLeft = do
   Equation lhs rhs <- get
-  let (Tag.At s (BinOpL Add lhs'), (Tag.At _ (BinOpL Add rhs'))) = (introduceAdd $ toExprL lhs, introduceAdd $ toExprL rhs)
+  let (Tag.At s (AppL Add lhs'), (Tag.At _ (AppL Add rhs'))) = (introduceAdd $ toExprL lhs, introduceAdd $ toExprL rhs)
   let (EquationL lhs'' rhs'') = allToLeft' s (lhs', rhs')
   put $ Equation (fromExprL lhs'') (fromExprL rhs'')
 
   where
 
     negExpr :: ExprL -> ExprL
-    negExpr e@(Tag.At s _) = Tag.At s (Expr.BinOpL Expr.Mul (e :| [Tag.At s (Expr.LitNumL (-1.0))]))
+    negExpr e@(Tag.At s _) = Tag.At s (Expr.AppL Expr.Mul (e :| [Tag.At s (Expr.LitNumL (-1.0))]))
 
     allToLeft' :: Tag.Span -> (NonEmpty ExprL, NonEmpty ExprL) -> Expr.EquationL
     allToLeft' s (lhs@(x :| xs), y :| ys) =
@@ -43,6 +43,6 @@ allToLeft = do
             (x :| xs) <> fmap negExpr (y :| ys)
       in
       Expr.EquationL
-        (Tag.At s (Expr.BinOpL Expr.Add finalized))
+        (Tag.At s (Expr.AppL Expr.Add finalized))
         (Tag.At (foldl1 Tag.mergeSpans $ fmap Tag.unspan (y :| ys)) (Expr.LitNumL 0))
 
