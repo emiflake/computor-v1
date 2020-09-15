@@ -2,14 +2,10 @@
 module Solve.Tactics where
 
 import Data.List.NonEmpty (NonEmpty(..))
-import qualified Data.List.NonEmpty as NonEmpty
 
-import Control.Applicative
-import Control.Monad.Except
+import Data.Semigroup
+
 import Control.Monad.State
-
-import Prettyprinter
-import Prettyprinter.Render.Terminal
 
 import Expr
 import qualified Tag
@@ -18,10 +14,9 @@ import SolveM
 
 
 introduceAdd :: ExprL -> ExprL
-introduceAdd =
-  \case
-    a@(Tag.At _ (Expr.AppL Expr.Add vs)) -> a
-    a@(Tag.At s i) -> Tag.At s (Expr.AppL Expr.Add (a :| []))
+introduceAdd expr = case expr of
+    (Tag.At _ (Expr.AppL Expr.Add _)) -> expr
+    (Tag.At s _) -> Tag.At s (Expr.AppL Expr.Add (expr :| []))
 
 -- Moves all terms from rhs to lhs of equation
 allToLeft :: SolveM ()
@@ -44,5 +39,5 @@ allToLeft = do
       in
       Expr.EquationL
         (Tag.At s (Expr.AppL Expr.Add finalized))
-        (Tag.At (foldl1 Tag.mergeSpans $ fmap Tag.unspan (y :| ys)) (Expr.LitNumL 0))
+        (Tag.At (sconcat $ fmap Tag.span (y :| ys)) (Expr.LitNumL 0))
 

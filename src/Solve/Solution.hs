@@ -2,8 +2,6 @@
 {-# LANGUAGE ViewPatterns #-}
 module Solve.Solution where
 
-import Debug.Trace
-
 import Prettyprinter
 import Prettyprinter.Render.Terminal
 
@@ -13,7 +11,6 @@ import Expr
 import SolveM
 import qualified Tag
 
-import Data.List.NonEmpty (NonEmpty(..))
 import qualified Data.List.NonEmpty as NonEmpty
 
 import Control.Monad.State

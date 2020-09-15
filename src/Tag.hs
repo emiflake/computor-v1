@@ -1,19 +1,22 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE DeriveFunctor #-}
-module Tag where
+module Tag
+  ( Position(..)
+  , Span(..)
+  , Spanned(..)
+  , spanned
+  , fullyInLine
+  , spannedBy
+  ) where
 
 import Prelude hiding (span)
 
 import Text.Parsec
 import Text.Parsec.Text
 import qualified Text.Parsec.Pos as Pos
-import Data.Text (Text)
-import qualified Data.Text as Text
 
 import Control.Applicative
-
-import Control.Lens hiding (at)
 
 import Prettyprinter hiding (line)
 
@@ -21,62 +24,51 @@ import Prettyprinter hiding (line)
 
 data Position
   = Position
-  { _line :: Int
-  , _column :: Int
+  { line :: Int
+  , column :: Int
   }
   deriving (Eq, Ord)
 
 instance Show Position where
   show (Position l c) = "[" <> show l <> ":" <> show c <> "]"
 
-makeLenses ''Position
-
 data Span =
   Span Position Position
   deriving (Show, Ord, Eq)
 
 data Spanned a
-  = At Span a
+  = At
+  { span   :: Span
+  , sValue :: a
+  }
   deriving (Show, Eq, Functor)
 
 instance Ord a => Ord (Spanned a) where
   compare (At _ a) (At _ b) =
     compare a b
 
-
-span :: Lens' (Spanned a) Span
-span = lens (\(At s _) -> s) (\(At _ v) s -> At s v)
-
-unwrapSpanned :: Spanned a -> a
-unwrapSpanned (At _ a) = a
-
-unspan :: Spanned a -> Span
-unspan = view span
-
 at :: Position -> Position -> a -> Spanned a
 at f t =
   At (Span f t)
 
 inLine :: Int -> Position -> Bool
-inLine l = (==) l . view line
+inLine l (Position l' _) = l == l'
 
 fullyInLine :: Int -> Span -> Bool
 fullyInLine l (Span f t) = inLine l f && inLine l t
 
-positionIn :: Position -> Span -> Bool
-positionIn p (Span f t) =
-  f <= p && p <= t
+instance Semigroup Span where
+  (<>) (Span start _) (Span _ end) =
+    Span start end
 
-mergeSpans :: Span -> Span -> Span
-mergeSpans (Span start _) (Span _ end) =
-  Span start end
-
-mergeSpanned :: Spanned a -> Spanned b -> Spanned (a, b)
-mergeSpanned (At s a) (At s' b) = At (mergeSpans s s') (a, b)
+instance Monoid Span where
+  -- Law holds because
+  --   forall a. mempty <> a == a && a <> mempty == a
+  mempty = Span (Position maxBound maxBound) (Position minBound minBound)
 
 spannedBy :: Spanned a -> Spanned b -> c -> Spanned c
-spannedBy (view span -> a) (view span -> b) p =
-  At (mergeSpans a b) p
+spannedBy a b p =
+  At (span a <> span b) p
 
 -- USE IN PARSERS
 
@@ -96,7 +88,7 @@ spanned p =
 instance Pretty Position where
   pretty (Position l c) =
     pretty l <> ":" <> pretty c
-  
+
 instance Pretty Span where
   pretty (Span f t) =
     pretty f <+> "to" <+> pretty t
