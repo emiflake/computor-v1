@@ -23,7 +23,7 @@ dependencies:
 - base >= 4.7 && < 5
 - parsec
 - text
-- lens
+- optparse-applicative
 - containers
 - prettyprinter == 1.7.*
 - prettyprinter-ansi-terminal

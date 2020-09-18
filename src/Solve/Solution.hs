@@ -58,7 +58,6 @@ solve = \case
     then NoValues
     else OneValue ((-b) / (2 * a))
 
-
 data Solution
   = TwoRoots Double Double Double
   | OneValue Double
@@ -66,15 +65,28 @@ data Solution
   | NoValues
   deriving (Show, Eq)
 
-prettySolution solution =
-  case solution of
-    NoValues -> annotate (color Red) "No valid X exists to fulfil this equation" <> hardline
-    AllValues -> annotate (color Green) "All values for X would fulfil this equation" <> hardline
-    OneValue v -> "Solved equation:" <+> annotate (color Green) ("X = " <> pretty v) <> hardline
-    TwoRoots d x x' -> "Solved equation, the discriminant is" <+>
-                       annotate (color Green) (pretty d) <+>
-                       "solutions are" <+> annotate (color Green)("X =" <+> pretty x) <+>
-                       "and" <+> annotate (color Green) ("X =" <+> pretty x') <> hardline
+prettySolution :: Solvable -> Solution -> Doc AnsiStyle
+prettySolution solvable solution =
+  let prettySolution =
+        case solution of
+          NoValues -> annotate (color Red) "No valid X exists to fulfil this equation" <> hardline
+          AllValues -> annotate (color Green) "All values for X would fulfil this equation" <> hardline
+          OneValue v -> "Solved equation:" <+> annotate (color Green) ("X = " <> pretty v) <> hardline
+          TwoRoots d x x' -> "Solved equation, the discriminant is" <+>
+                            annotate (color Green) (pretty d) <+>
+                            "solutions are" <+> annotate (color Green)("X =" <+> pretty x) <+>
+                            "and" <+> annotate (color Green) ("X =" <+> pretty x') <> hardline
+
+      prettySolvable =
+        case solvable of
+          Degree0 _ -> "Equation of degree" <+> annotate (color Blue) "0"
+          Degree1 _ _ ->  "Equation of degree" <+> annotate (color Blue) "1"
+          Degree2 _ _ _ -> "Equation of degree" <+> annotate (color Blue) "2"
+  in
+  vsep
+  [ prettySolvable
+  , prettySolution
+  ]
 
 toTerm :: Expr -> SolveM PolyTerm
 toTerm (Tag.At span expr) =

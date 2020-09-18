@@ -1,8 +1,9 @@
-NAME=computor-v1-exe
+NAME=computor-v1
 
 all: $(NAME)
 $(NAME):
 	stack build --ghc-options=-O3 --copy-bins --local-bin-path ./
+	mv ./computor-v1-exe $(NAME)
 
 ghci:
 	stack ghci

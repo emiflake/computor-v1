@@ -10,6 +10,7 @@ import Data.Text (Text)
 
 import Prelude hiding (log)
 
+import Config
 import qualified  Report
 import Expr
 import qualified Tag
@@ -45,14 +46,14 @@ data SolveError
 
 newtype SolveM a =
   SolveM
-  { runSolveM' :: ExceptT SolveError (StateT Equation (WriterT (Doc AnsiStyle) (ReaderT Equation IO))) a
+  { runSolveM' :: ExceptT SolveError (StateT Equation (WriterT (Doc AnsiStyle) (ReaderT Config IO))) a
   }
   deriving
     ( Monad
     , Functor
     , Applicative
     , MonadIO
-    , MonadReader Equation
+    , MonadReader Config
     , MonadError SolveError
     , MonadWriter (Doc AnsiStyle)
     , MonadState Equation
@@ -61,11 +62,10 @@ newtype SolveM a =
 -- Low level operations
 -- Shouldn't emit anything by themselves, they are the building blocks for other parts
 
-runSolveM :: Equation -> SolveM a -> IO (Either SolveError a)
-runSolveM equation f = do
-  (result, logs) <- (`runReaderT` equation) . runWriterT . (`evalStateT` equation) . runExceptT . runSolveM' $ f
-  putDoc logs
-  pure result
+runSolveM :: Config -> Equation -> SolveM a -> IO (Either SolveError a, Doc AnsiStyle)
+runSolveM cfg equation f = do
+  (result, logs) <- (`runReaderT` cfg) . runWriterT . (`evalStateT` equation) . runExceptT . runSolveM' $ f
+  pure (result, logs)
 
 log :: Doc AnsiStyle -> SolveM ()
 log = tell

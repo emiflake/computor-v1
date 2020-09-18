@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8f0010a921e9d26460e59bd0a238560d74ab48b35ab2a06e4b2d2a87a5eff7fe
+-- hash: 0504919981a7613a36900a44fa776e6de8f1790782c6a7d880614c9b329131c3
 
 name:           computor-v1
 version:        0.1.0.0
@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:
+      Config
       Expr
       Expr.Parse
       Report
@@ -35,7 +36,6 @@ library
       Solve.Tactics
       SolveM
       Tag
-      Util
   other-modules:
       Paths_computor_v1
   hs-source-dirs:
@@ -44,8 +44,8 @@ library
   build-depends:
       base >=4.7 && <5
     , containers
-    , lens
     , mtl
+    , optparse-applicative
     , parsec
     , prettyprinter ==1.7.*
     , prettyprinter-ansi-terminal
@@ -65,8 +65,8 @@ executable computor-v1-exe
       base >=4.7 && <5
     , computor-v1
     , containers
-    , lens
     , mtl
+    , optparse-applicative
     , parsec
     , prettyprinter ==1.7.*
     , prettyprinter-ansi-terminal
@@ -87,8 +87,8 @@ test-suite computor-v1-test
       base >=4.7 && <5
     , computor-v1
     , containers
-    , lens
     , mtl
+    , optparse-applicative
     , parsec
     , prettyprinter ==1.7.*
     , prettyprinter-ansi-terminal
