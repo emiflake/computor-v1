@@ -104,27 +104,34 @@ fromExprL (Tag.At span exprL) = case exprL of
 (Tag.At _ (BinOp op lhs rhs)) ~= (Tag.At _ (BinOp op' lhs' rhs')) = op == op' && lhs ~= lhs' && rhs ~= rhs'
 _ ~= _ = False
 
-line :: Int -> Expr -> Maybe Expr
-line n full@(Tag.At exprSpan e) =
-  if Tag.fullyInLine n exprSpan
-  then
-    Just full
-  else
-    case e of
-      (BinOp _ lhs rhs) -> Expr.line n lhs <|> Expr.line n rhs
-      _ -> Nothing
+line :: Int -> Equation -> Maybe Expr
+line n (Equation lhs rhs) =
+  go n lhs <|> go n rhs
+  where
+  go :: Int -> Expr -> Maybe Expr
+  go n' full@(Tag.At exprSpan e) =
+    if Tag.fullyInLine n' exprSpan
+    then
+      Just full
+    else
+      case e of
+        (BinOp _ lhs' rhs') -> go n' lhs' <|> go n' rhs'
+        _ -> Nothing
 
-smallestContainingSpan :: Tag.Span -> Expr -> Maybe Expr
-smallestContainingSpan span full@(Tag.At exprSpan e) =
-  if span == exprSpan
-  then
-    Just full
-  else
-    case e of
-      (BinOp _ lhs rhs) -> smallestContainingSpan span lhs <|> smallestContainingSpan span rhs
-      _ -> Nothing
 
--- PARSE
+smallestContainingSpan :: Tag.Span -> Equation -> Maybe Expr
+smallestContainingSpan span (Equation lhs rhs) =
+  go span lhs <|> go span rhs
+  where
+    go :: Tag.Span -> Expr -> Maybe Expr
+    go span full@(Tag.At exprSpan e) =
+      if span == exprSpan
+      then
+        Just full
+      else
+        case e of
+          (BinOp _ lhs' rhs') -> go span lhs' <|> go span rhs'
+          _ -> Nothing
 
 -- RUN
 
@@ -149,7 +156,12 @@ instance forall scope. Pretty (Identifier scope) where
 instance Pretty Expr' where
   pretty = \case
     FreeVar ident -> pretty ident
-    LitNum  double -> pretty double
+    LitNum  double ->
+      if fromInteger (round double) == double then
+        pretty (round double :: Int)
+      else
+        pretty double
+    BinOp   Mul lhs@(Tag.At _ (LitNum _)) (Tag.At _ (FreeVar rhs)) -> pretty lhs <> pretty rhs
     BinOp   op lhs rhs -> "(" <> pretty lhs <+> pretty op <+> pretty rhs <> ")"
 
 prettyAnnotateSpan :: Tag.Span -> ann -> Expr -> Doc ann
@@ -161,6 +173,10 @@ prettyAnnotateSpan span ann full@(Tag.At exprSpan e) =
     case e of
       BinOp   op lhs rhs -> "(" <> prettyAnnotateSpan span ann lhs <+> pretty op <+> prettyAnnotateSpan span ann rhs <> ")"
       a -> pretty a
+
+prettyAnnotateSpanEquation :: Tag.Span -> ann -> Equation -> Doc ann
+prettyAnnotateSpanEquation span ann (Equation lhs rhs) =
+  prettyAnnotateSpan span ann lhs <> softline <> "=" <> softline <> prettyAnnotateSpan span ann rhs
 
 instance Pretty Equation where
   pretty (Equation lhs rhs) =

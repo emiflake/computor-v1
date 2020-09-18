@@ -1,11 +1,16 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module SolveM where
 
 import Prettyprinter
 import Prettyprinter.Render.Terminal
 
+import qualified Data.Text as Text
+import Data.Text (Text)
+
 import Prelude hiding (log)
 
+import qualified  Report
 import Expr
 import qualified Tag
 
@@ -20,7 +25,9 @@ import Control.Monad.Except
 -- Rule-based system for solution with steps in between being optionally reported with pretty log
 
 data SolveError
-  = DivideBy0 Expr Tag.Span Tag.Span Tag.Span -- Solving failed because divide by 0 was encountered somewhere along the way
+  = DivideBy0 Tag.Span Tag.Span Tag.Span -- Solving failed because divide by 0 was encountered somewhere along the way
+  | ExponentTooLarge Tag.Span
+  | ShapeError Tag.Span
   deriving (Show, Eq)
 
 -- Stack explanation:
@@ -76,44 +83,40 @@ operateOnSide side f = do
 putCurrentState :: SolveM ()
 putCurrentState =
   get >>= \cs -> log $
-    hardline
-    <> indent 8 (annotate (color Blue) (pretty cs)) <> hardline
-    <> hardline
-
-
--- Higher level operations
-
--- Emits an 'arrow' to pretty log
--- reductionStep :: (Equation -> SolveM Equation) -> SolveM ()
-
--- reduce :: Side -> SolveM ()
--- reduce side = operateOnSide side (Reduce.reduce
-
--- reorder :: SolveM ()
-
--- isSolvable :: SolveM Bool
-
--- solve :: SolveM Solution
+    Report.prettyIndent 4 (annotate (color Yellow) (pretty cs))
+    
 
 -- Prettify the error message
-
-prettyError (DivideBy0 srcExpr span@(Tag.Span (Tag.Position l c) _) lhs rhs) =
-    "Reduction error caused by divide by 0 at " <> pretty span <> hardline
-    <> hardline
-    <> "When dividing" <> hardline
-    <> hardline
-    <> indent 4 (annotate (color Blue) (pretty (Expr.smallestContainingSpan lhs srcExpr))) <> hardline
-    <> hardline
-    <> "by" <> hardline
-    <> hardline
-    <> indent 4 (annotate (color Blue) (pretty (Expr.smallestContainingSpan rhs srcExpr))) <+> "... which evaluates to 0" <> hardline
-    <> hardline
-    <> hardline <>
-    (case Expr.line l srcExpr of
-      Just line ->
-        "starting on line" <+> pretty l <+> "column" <+> pretty c <> ":" <> hardline
-        <> hardline
-        <> (indent 4 (Expr.prettyAnnotateSpan span (color Red) line)) <> hardline
-      Nothing -> 
-        emptyDoc
-    )
+prettyError :: Text -> Equation -> SolveError -> Doc AnsiStyle
+prettyError source equation = \case
+  ExponentTooLarge span@(Tag.Span (Tag.Position l c) (Tag.Position _ c')) ->
+    vsep
+    ["Exponent is too large at " <> pretty span
+    , ""
+    , "Starting at line" <+> pretty l <+> "column" <+> pretty c <> ":"
+    , Report.prettySpanSquiggly 4 span source
+    , annotate (color Black) "NOTE: This is because in computor-v1, exponents of degrees higher than 3 are not required to be solved"
+    , ""
+    ]
+  ShapeError span@(Tag.Span (Tag.Position l c) (Tag.Position _ c')) ->
+    vsep
+    [ "Equation is of wrong shape at " <> pretty span
+    , ""
+    , "Starting at line" <+> pretty l <+> "column" <+> pretty c <> ":"
+    , Report.prettySpanSquiggly 4 span source
+    , annotate (color Black) "NOTE: This usually happens because reduction isn't smart enough to reorder terms, try moving some terms to left-hand side"
+    , ""
+    ]
+  (DivideBy0 span@(Tag.Span (Tag.Position l c) (Tag.Position _ c')) lhs rhs) ->
+    vsep
+    ["Reduction error caused by divide by 0 at " <> pretty span
+    , ""
+    , indent 6 "When dividing"
+    , Report.prettyIndent 4 (annotate (color Yellow) (pretty (Expr.smallestContainingSpan lhs equation)))
+    , "by " <+> annotate (color Blue) "|"
+    , Report.prettyIndent 4 (annotate (color Yellow) (pretty (Expr.smallestContainingSpan rhs equation)) <+> "... which evaluates to 0")
+    , ""
+    , "Starting at line" <+> pretty l <+> "column" <+> pretty c <> ":"
+    , Report.prettySpanSquiggly 4 span source
+    ]
+  

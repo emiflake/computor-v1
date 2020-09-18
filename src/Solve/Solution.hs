@@ -13,6 +13,7 @@ import qualified Tag
 
 import qualified Data.List.NonEmpty as NonEmpty
 
+import Control.Monad.Except
 import Control.Monad.State
 
 import qualified Data.Map.Strict as Map
@@ -56,7 +57,7 @@ solve = \case
     else if discriminant < 0
     then NoValues
     else OneValue ((-b) / (2 * a))
-      
+
 
 data Solution
   = TwoRoots Double Double Double
@@ -75,28 +76,23 @@ prettySolution solution =
                        "solutions are" <+> annotate (color Green)("X =" <+> pretty x) <+>
                        "and" <+> annotate (color Green) ("X =" <+> pretty x') <> hardline
 
-data PolyTermError
-  = ExponentTooLarge Tag.Span
-  | ShapeError Tag.Span
-  deriving (Show, Eq)
-
-toTerm :: Expr -> Either PolyTermError PolyTerm
+toTerm :: Expr -> SolveM PolyTerm
 toTerm (Tag.At span expr) =
   case expr of
-    LitNum d -> Right $ PolyTerm d 0
-    FreeVar i -> Right $ PolyTerm 1 1
+    LitNum d -> pure $ PolyTerm d 0
+    FreeVar i -> pure $ PolyTerm 1 1
     BinOp Mul (Tag.At _ (LitNum d)) (Tag.At _ rhs) ->
       case rhs of
-        FreeVar i -> Right $ PolyTerm d 1
+        FreeVar i -> pure $ PolyTerm d 1
         BinOp Pow (Tag.At _ (FreeVar _)) (Tag.At s (LitNum mag)) ->
-          if mag <= 2 && mag >= 0 then Right $ PolyTerm d mag
-          else Left $ ExponentTooLarge s
-        _ -> Left $ ShapeError span
+          if mag <= 2 && mag >= 0 then pure $ PolyTerm d mag
+          else throwError $ ExponentTooLarge s
+        _ -> throwError $ ShapeError span
     BinOp Pow (Tag.At _ (FreeVar _)) (Tag.At s (LitNum mag)) ->
-      if mag <= 2 && mag >= 0 then Right $ PolyTerm 1 mag
-      else Left $ ExponentTooLarge s
+      if mag <= 2 && mag >= 0 then pure $ PolyTerm 1 mag
+      else throwError $ ExponentTooLarge s
     _ ->
-      Left $ ShapeError span
+      throwError $ ShapeError span
 
 toPolyTermEquation :: [PolyTerm] -> PolyTermEquation
 toPolyTermEquation [] = Map.empty
@@ -109,13 +105,9 @@ accumulateTerms = do
   Equation (toExprL -> lhs) rhs <- get
   case introduceAdd lhs of
     Tag.At _ (AppL Add terms) -> do
-      case traverse (toTerm . fromExprL) terms of
-        Left e -> do
-          -- SolveM.log $ pretty (show e) <> hardline
-          pure Map.empty
-        Right nonEmpty -> do
-          SolveM.log $ "PolyTerms:" <+> pretty nonEmpty <> hardline
-          pure . toPolyTermEquation $ NonEmpty.toList nonEmpty
+      res <- traverse (toTerm . fromExprL) terms
+      -- SolveM.log $ "PolyTerms:" <+> pretty nonEmpty <> hardline
+      pure . toPolyTermEquation $ NonEmpty.toList res
     _ -> do
       -- SolveM.log $ "Top level isn't addition" <> hardline
       pure Map.empty
@@ -124,7 +116,7 @@ accumulateTerms = do
 identifySolvable :: SolveM (Maybe Solvable)
 identifySolvable = do
   equation <- accumulateTerms
-  let greatest = maximum (Map.keys equation)
+  let greatest = foldl max (-1) (Map.keys equation)
   pure $ case greatest of
     2.0 ->
       let c = fromMaybe 0 $ Map.lookup 0.0 equation

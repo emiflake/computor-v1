@@ -76,7 +76,7 @@ reduce1 = \case
       -- /0
       (_, (Tag.At lhsSpan _, Tag.At rhsSpan (Expr.LitNum 0))) | op == Expr.Div ->
         -- FIXME: `a` here represents a subexpression, not the entire expression, so it will get represented badly
-        throwError $ DivideBy0 a span lhsSpan rhsSpan
+        throwError $ DivideBy0 span lhsSpan rhsSpan
 
       -- X - X
       (Expr.Sub, (lhs', rhs')) | lhs' ~= rhs' ->

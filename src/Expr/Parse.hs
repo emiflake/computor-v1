@@ -24,7 +24,7 @@ freeIdent :: Parser (Identifier 'FreeScope)
 freeIdent = identifier @'FreeScope ['X'] []
 
 whitespace :: Parser ()
-whitespace = void $ many (oneOf [' ', '\n', '\r', '\t'])
+whitespace = void $ many (oneOf [' ', '\n', '\t'])
 
 identifier :: forall (scope :: Scope). [Char] -> [Char] -> Parser (Identifier scope)
 identifier beginning rest =

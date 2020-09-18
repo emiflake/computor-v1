@@ -8,6 +8,8 @@ import Data.Text (Text)
 import Expr
 import Expr.Parse
 
+import qualified Report
+
 import Prettyprinter
 import Prettyprinter.Render.Terminal
 
@@ -20,7 +22,8 @@ import Solve.Solution
 
 lemma :: SolveM (Maybe Solution)
 lemma = do
-  SolveM.log $ "Starting solution tactic 'lemma'" <> hardline
+  SolveM.log $
+    annotate (color Black) $ Report.boxed "Using simple solution algorithm"
   putCurrentState
   SolveM.log $ "Reduce both sides" <> hardline
   operateOnSide Both $ reduce1 >=> reorder >=> reduce1
@@ -33,7 +36,6 @@ lemma = do
   operateOnSide Both $ reduce1 >=> reorder >=> reduce1
   putCurrentState
   solvable <- identifySolvable
-  -- SolveM.log $ pretty (show solvable) <> hardline
   pure $ fmap solve solvable
 
 
@@ -45,6 +47,6 @@ solveAST text =
       runSolveM eq lemma >>= \case
         Right (Just sol) -> putDoc $ prettySolution sol
         Right Nothing -> putDoc $ "no solution was found..."
-        Left e -> putDoc (prettyError e)
+        Left e -> putDoc (prettyError text eq e)
     Left e -> print e
 
