@@ -73,7 +73,6 @@ prettyIndent width content =
   [ paddingBreak width
   , paddingBreak width <+> content
   , paddingBreak width
-  , ""
   ]
 
 prettyLine :: Int -> Int -> Doc AnsiStyle -> Doc AnsiStyle

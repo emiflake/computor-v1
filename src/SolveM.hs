@@ -84,7 +84,7 @@ putCurrentState :: SolveM ()
 putCurrentState =
   get >>= \cs -> log $
     Report.prettyIndent 4 (annotate (color Yellow) (pretty cs))
-    
+
 
 -- Prettify the error message
 prettyError :: Text -> Equation -> SolveError -> Doc AnsiStyle
@@ -118,5 +118,6 @@ prettyError source equation = \case
     , ""
     , "Starting at line" <+> pretty l <+> "column" <+> pretty c <> ":"
     , Report.prettySpanSquiggly 4 span source
+    , ""
     ]
   
