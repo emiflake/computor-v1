@@ -46,13 +46,12 @@ data SolveError
 
 newtype SolveM a =
   SolveM
-  { runSolveM' :: ExceptT SolveError (StateT Equation (WriterT (Doc AnsiStyle) (ReaderT Config IO))) a
+  { runSolveM' :: ExceptT SolveError (StateT Equation (WriterT (Doc AnsiStyle) (Reader Config))) a
   }
   deriving
     ( Monad
     , Functor
     , Applicative
-    , MonadIO
     , MonadReader Config
     , MonadError SolveError
     , MonadWriter (Doc AnsiStyle)
@@ -62,10 +61,9 @@ newtype SolveM a =
 -- Low level operations
 -- Shouldn't emit anything by themselves, they are the building blocks for other parts
 
-runSolveM :: Config -> Equation -> SolveM a -> IO (Either SolveError a, Doc AnsiStyle)
-runSolveM cfg equation f = do
-  (result, logs) <- (`runReaderT` cfg) . runWriterT . (`evalStateT` equation) . runExceptT . runSolveM' $ f
-  pure (result, logs)
+runSolveM :: Config -> Equation -> SolveM a -> (Either SolveError a, Doc AnsiStyle)
+runSolveM cfg equation =
+  (`runReader` cfg) . runWriterT . (`evalStateT` equation) . runExceptT . runSolveM'
 
 log :: Doc AnsiStyle -> SolveM ()
 log = tell

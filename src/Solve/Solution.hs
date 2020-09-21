@@ -4,6 +4,7 @@ module Solve.Solution where
 
 import Prettyprinter
 import Prettyprinter.Render.Terminal
+import Report
 
 import Data.Maybe
 
@@ -143,3 +144,20 @@ identifySolvable = do
       let a = fromMaybe 0 $ Map.lookup 0.0 equation
       in Just $ Degree0 a
     _ -> Nothing
+
+getSolution :: SolveM (Maybe (Solvable, Solution))
+getSolution = do
+  SolveM.log . annotate (color Black) $ Report.boxed "Using simple solution algorithm"
+  putCurrentState
+  SolveM.log $ "Reduce both sides" <> hardline
+  operateOnSide Both $ reduce1 >=> reorder >=> reduce1
+  putCurrentState
+  SolveM.log $ "Move all terms to rhs" <> hardline
+  allToLeft
+  putCurrentState
+  SolveM.log $ "Reduce both sides" <> hardline
+  operateOnSide Both $ reduce1 >=> reorder >=> reduce1
+  operateOnSide Both $ reduce1 >=> reorder >=> reduce1
+  putCurrentState
+  solvable <- identifySolvable
+  pure $ fmap (\s' -> (s', solve s')) solvable

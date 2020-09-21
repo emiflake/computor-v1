@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8f7e99b57c8bf5efaffe54098d7a76400aa0387dd71c803778597709c47f55cc
+-- hash: 31b270dfb6f8f673627cc0c8a1d9b659c84daa8808067d6b945cc1cd36bb731e
 
 name:           computor-v1
 version:        0.1.0.0
@@ -29,6 +29,7 @@ library
       Config
       Expr
       Expr.Parse
+      Lib
       Report
       Solve.Reduce
       Solve.Solution
@@ -86,6 +87,7 @@ test-suite computor-v1-test
       base >=4.7 && <5
     , computor-v1
     , containers
+    , hspec
     , mtl
     , optparse-applicative
     , parsec
