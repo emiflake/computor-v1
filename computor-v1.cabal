@@ -1,29 +1,28 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.2.
+-- This file has been generated from package.yaml by hpack version 0.33.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0504919981a7613a36900a44fa776e6de8f1790782c6a7d880614c9b329131c3
+-- hash: 8f7e99b57c8bf5efaffe54098d7a76400aa0387dd71c803778597709c47f55cc
 
 name:           computor-v1
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/githubuser/computor-v1#readme>
-homepage:       https://github.com/githubuser/computor-v1#readme
-bug-reports:    https://github.com/githubuser/computor-v1/issues
-author:         Author name here
-maintainer:     example@example.com
-copyright:      2020 Author name here
+description:    Please see the README on GitHub at <https://github.com/emiflake/computor-v1>
+homepage:       https://github.com/emiflake/computor-v1#readme
+bug-reports:    https://github.com/emiflake/computor-v1/issues
+author:         Emily Martins
+maintainer:     emily.flakeheart@gmail.com
+copyright:      2020 Emily Martins
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
-    ChangeLog.md
 
 source-repository head
   type: git
-  location: https://github.com/githubuser/computor-v1
+  location: https://github.com/emiflake/computor-v1
 
 library
   exposed-modules:

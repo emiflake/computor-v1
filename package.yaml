@@ -1,14 +1,13 @@
 name:                computor-v1
 version:             0.1.0.0
-github:              "githubuser/computor-v1"
+github:              "emiflake/computor-v1"
 license:             BSD3
-author:              "Author name here"
-maintainer:          "example@example.com"
-copyright:           "2020 Author name here"
+author:              "Emily Martins"
+maintainer:          "emily.flakeheart@gmail.com"
+copyright:           "2020 Emily Martins"
 
 extra-source-files:
 - README.md
-- ChangeLog.md
 
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
@@ -17,7 +16,7 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/githubuser/computor-v1#readme>
+description:         Please see the README on GitHub at <https://github.com/emiflake/computor-v1>
 
 dependencies:
 - base >= 4.7 && < 5

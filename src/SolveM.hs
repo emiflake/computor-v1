@@ -83,7 +83,7 @@ operateOnSide side f = do
 putCurrentState :: SolveM ()
 putCurrentState =
   get >>= \cs -> log $
-    Report.prettyIndent 4 (annotate (color Yellow) (pretty cs))
+    Report.prettyIndent 4 (annotate (color Yellow) (pretty cs)) <> hardline
 
 
 -- Prettify the error message
@@ -120,4 +120,3 @@ prettyError source equation = \case
     , Report.prettySpanSquiggly 4 span source
     , ""
     ]
-  
