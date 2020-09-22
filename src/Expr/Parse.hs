@@ -88,7 +88,11 @@ expr'' :: Parser Expr
 expr'' = opLevelLeft (asum [ operator "^" Pow ]) term
 
 expr' :: Parser Expr
-expr' = opLevelLeft (asum [ operator "*" Mul, operator "/" Div ]) expr''
+expr' =
+  asum
+  [ try $ Tag.spanned $ BinOp Mul <$> (Tag.spanned $ LitNum <$> litNum) <* whitespace <*> term
+  , opLevelLeft (asum [ operator "*" Mul, operator "/" Div ]) expr''
+  ]
 
 expr :: Parser Expr
 expr = opLevelLeft (asum [ operator "+" Add, operator "-" Sub ]) expr'

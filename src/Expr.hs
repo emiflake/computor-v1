@@ -87,9 +87,9 @@ fromExprL :: ExprL -> Expr
 fromExprL (Tag.At span exprL) = case exprL of
   FreeVarL i -> Tag.At span $ FreeVar i
   LitNumL d -> Tag.At span $ LitNum d
-  AppL op (NonEmpty.sort -> h :| t) | op `elem` [Add, Mul] -> 
+  AppL op (NonEmpty.sort -> h :| t) | op `elem` [Add, Mul] ->
     foldl (\acc v -> Tag.At span $ BinOp op acc (fromExprL v)) (fromExprL h) t
-  AppL op (h :| t) -> 
+  AppL op (h :| t) ->
     foldl (\acc v -> Tag.At span $ BinOp op acc (fromExprL v)) (fromExprL h) t
 
 
