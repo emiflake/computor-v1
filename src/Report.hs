@@ -41,10 +41,10 @@ squiggly :: Int -> Int -> Int -> Doc AnsiStyle
 squiggly width s end =
   paddingBreak width <> pretty (replicate s ' ') <> annotate (color Red) (pretty (replicate (end - s) '^'))
 
-squigglyElongated :: Int -> Int -> Int -> Bool -> Doc AnsiStyle
-squigglyElongated width s end isElongated =
+squigglyElongated :: Int -> Int -> Int -> Int -> Bool -> Doc AnsiStyle
+squigglyElongated width s end lineWidth isElongated =
   if isElongated then
-    squiggly width s end <> annotate (color Red) "..." <+> annotate (color Black) "<- continues on following line(s)"
+    squiggly width s lineWidth <> annotate (color Red) "..." <+> annotate (color Black) "<- continues on following line(s)"
   else
     squiggly width s end
 
@@ -88,7 +88,7 @@ prettyLines :: Int -> Int -> [Doc AnsiStyle] -> Doc AnsiStyle
 prettyLines width lineNumber content =
   vsep $
     [ paddingBreak width ] <> fmap (addLineNumber width lineNumber) content <> [ paddingBreak width, "" ]
-  
+
 prettySpanSquiggly :: Int -> Tag.Span -> Text -> Doc AnsiStyle
 prettySpanSquiggly width (Tag.Span (Tag.Position startLine startColumn) (Tag.Position endLine endColumn)) sourceCode =
   let
@@ -100,7 +100,7 @@ prettySpanSquiggly width (Tag.Span (Tag.Position startLine startColumn) (Tag.Pos
         vsep $
           [ paddingBreak width
           , ln startLine
-          , squigglyElongated width startColumn (Text.length (Report.line startLine sourceCode) + 1) (startLine /= endLine)
+          , squigglyElongated width startColumn endColumn (Text.length (Report.line startLine sourceCode) + 1) (startLine /= endLine)
           , paddingBreak width
           ]
       _ ->
