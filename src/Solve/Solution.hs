@@ -66,17 +66,23 @@ data Solution
   | NoValues
   deriving (Show, Eq)
 
+normalizeZero :: Double -> Double
+normalizeZero n | n == 0 = 0
+normalizeZero n = n
+
 prettySolution :: Solvable -> Solution -> Doc AnsiStyle
 prettySolution solvable solution =
   let prettySolution =
         case solution of
           NoValues -> annotate (color Red) "No valid X exists to fulfil this equation" <> hardline
           AllValues -> annotate (color Green) "All values for X would fulfil this equation" <> hardline
-          OneValue v -> "Solved equation:" <+> annotate (color Green) ("X = " <> pretty v) <> hardline
-          TwoRoots d x x' -> "Solved equation, the discriminant is" <+>
-                            annotate (color Green) (pretty d) <+>
-                            "solutions are" <+> annotate (color Green)("X =" <+> pretty x) <+>
-                            "and" <+> annotate (color Green) ("X =" <+> pretty x') <> hardline
+          OneValue (normalizeZero -> v) ->
+            "Solved equation:" <+> annotate (color Green) ("X = " <> pretty v) <> hardline
+          TwoRoots (normalizeZero -> d) (normalizeZero -> x) (normalizeZero -> x') ->
+            "Solved equation, the discriminant is" <+>
+            annotate (color Green) (pretty d) <+>
+            "solutions are" <+> annotate (color Green)("X =" <+> pretty x) <+>
+            "and" <+> annotate (color Green) ("X =" <+> pretty x') <> hardline
 
       prettySolvable =
         case solvable of
