@@ -82,7 +82,7 @@ solutionsApproxEq :: Solution -> Solution -> Expectation
 solutionsApproxEq a b =
   case (a, b) of
     (TwoRoots d x y, TwoRoots d' x' y')
-      | d ~~= d' && x ~~= x' && y ~~= y' -> succeed
+      | d ~~= d' && x == x' && y == y' -> succeed
     (OneValue v, OneValue v')
       | v ~~= v' -> succeed
     (AllValues, AllValues) -> succeed
@@ -134,9 +134,9 @@ main = hspec $ do
     "5 = X" ==> OneValue 5
     "5 = 5" ==> AllValues
     "0 = 1" ==> NoValues
-    "X * X = 36" ==> TwoRoots 144 6 (-6)
-    "X * X + 1 = 37" ==> TwoRoots 144 6 (-6)
-    "1 * X * X = 4" ==> TwoRoots 16 2 (-2)
+    "X * X = 36" ==> TwoRoots 144 (FullySolvable 6) (FullySolvable (-6))
+    "X * X + 1 = 37" ==> TwoRoots 144 (FullySolvable 6) (FullySolvable (-6))
+    "1 * X * X = 4" ==> TwoRoots 16 (FullySolvable 2) (FullySolvable (-2))
     "-1 = X" ==> OneValue (-1)
     "X - X = X" ==> OneValue 0
     "X = 0.1 * ((5 + 5) * 10 - 1)" ==> OneValue 9.9

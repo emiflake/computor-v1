@@ -43,6 +43,53 @@ data Solvable
   | Degree2 Double Double Double
   deriving (Show, Eq)
 
+
+data NoReduce
+  = Imaginary
+  | Sqrt Double
+  deriving (Show, Eq)
+
+instance Pretty NoReduce where
+  pretty = \case
+    Imaginary -> "i"
+    Sqrt n -> "√" <> pretty n
+
+data SolutionShape
+  = FullySolvable Double
+  | NonReducable Bool Double Double NoReduce
+  deriving (Show, Eq)
+
+instance Pretty SolutionShape where
+  pretty = \case
+    FullySolvable n -> pretty n
+    NonReducable p a b i | abs a <= 0.0001 ->
+      sign p <> pretty b <> pretty i
+    NonReducable p a b i ->
+      pretty a <+> sign p <+> pretty b <> pretty i
+
+    where sign = \case { True -> "+" ; False -> "-" }
+
+solveABC disc a b c =
+  case compare disc 0 of
+    GT ->
+      if isSquare disc then
+        TwoRoots disc
+        (FullySolvable $ ((-b) + sqrt disc) / 2 * a)
+        (FullySolvable $ ((-b) - sqrt disc) / 2 * a)
+      else
+        TwoRoots disc
+        (NonReducable True ((-b) / (2 * a)) (1 / (2 * a)) (Sqrt disc))
+        (NonReducable False ((-b) / (2 * a)) (1 / (2 * a)) (Sqrt disc))
+
+    EQ -> OneValue ((-b) / (2 * a))
+    LT ->
+      TwoRoots disc
+      (NonReducable True ((-b) / (2 * a)) (1 / (2 * a)) Imaginary)
+      (NonReducable False ((-b) / (2 * a)) (1 / (2 * a)) Imaginary)
+  where
+    isSquare :: Double -> Bool
+    isSquare x = let sq = sqrt x in abs (fromIntegral (round sq) - sq) <= 0.0001
+
 solve :: Solvable -> Solution
 solve = \case
   Degree0 n | n ~~= 0 -> AllValues
@@ -50,17 +97,10 @@ solve = \case
   Degree1 a b -> OneValue (negate a / b)
   Degree2 a b c ->
     let discriminant = b ** 2 - 4 * a * c
-    in
-    if discriminant > 0
-    then TwoRoots discriminant
-                  ((-b + sqrt discriminant) / (2 * a))
-                  ((-b - sqrt discriminant) / (2 * a))
-    else if discriminant < 0
-    then NoValues
-    else OneValue ((-b) / (2 * a))
+    in solveABC discriminant a b c
 
 data Solution
-  = TwoRoots Double Double Double
+  = TwoRoots Double SolutionShape SolutionShape
   | OneValue Double
   | AllValues
   | NoValues
@@ -76,9 +116,9 @@ prettySolution solvable solution =
         case solution of
           NoValues -> annotate (color Red) "No valid X exists to fulfil this equation" <> hardline
           AllValues -> annotate (color Green) "All values for X would fulfil this equation" <> hardline
-          OneValue (normalizeZero -> v) ->
+          OneValue v ->
             "Solved equation:" <+> annotate (color Green) ("X = " <> pretty v) <> hardline
-          TwoRoots (normalizeZero -> d) (normalizeZero -> x) (normalizeZero -> x') ->
+          TwoRoots d x x' ->
             "Solved equation, the discriminant is" <+>
             annotate (color Green) (pretty d) <+>
             "solutions are" <+> annotate (color Green)("X =" <+> pretty x) <+>
