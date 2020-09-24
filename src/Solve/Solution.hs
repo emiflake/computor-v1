@@ -8,6 +8,7 @@ import Report
 
 import Data.Maybe
 
+import Control.Category ((>>>))
 import Expr
 import SolveM
 import qualified Tag
@@ -66,7 +67,6 @@ instance Pretty SolutionShape where
       sign p <> pretty b <> pretty i
     NonReducable p a b i ->
       pretty a <+> sign p <+> pretty b <> pretty i
-
     where sign = \case { True -> "+" ; False -> "-" }
 
 solveABC disc a b c =
@@ -84,8 +84,8 @@ solveABC disc a b c =
     EQ -> OneValue ((-b) / (2 * a))
     LT ->
       TwoRoots disc
-      (NonReducable True ((-b) / (2 * a)) (1 / (2 * a)) Imaginary)
-      (NonReducable False ((-b) / (2 * a)) (1 / (2 * a)) Imaginary)
+      (NonReducable True ((-b) / (2 * a)) (1 / (2 * a) * sqrt (-disc)) Imaginary)
+      (NonReducable False ((-b) / (2 * a)) (1 / (2 * a) * sqrt (-disc)) Imaginary)
   where
     isSquare :: Double -> Bool
     isSquare x = let sq = sqrt x in abs (fromIntegral (round sq) - sq) <= 0.0001
@@ -110,6 +110,12 @@ normalizeZero :: Double -> Double
 normalizeZero n | n == 0 = 0
 normalizeZero n = n
 
+prettyDiscriminant =
+  flip compare 0 >>> \case
+    GT -> "Discriminant is strictly positive"
+    EQ -> "Discriminant is 0"
+    LT -> "Discriminant is strictly negative"
+
 prettySolution :: Solvable -> Solution -> Doc AnsiStyle
 prettySolution solvable solution =
   let prettySolution =
@@ -119,7 +125,8 @@ prettySolution solvable solution =
           OneValue v ->
             "Solved equation:" <+> annotate (color Green) ("X = " <> pretty v) <> hardline
           TwoRoots d x x' ->
-            "Solved equation, the discriminant is" <+>
+            prettyDiscriminant d <> hardline <>
+            "The discriminant is" <+>
             annotate (color Green) (pretty d) <+>
             "solutions are" <+> annotate (color Green)("X =" <+> pretty x) <+>
             "and" <+> annotate (color Green) ("X =" <+> pretty x') <> hardline
