@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 31b270dfb6f8f673627cc0c8a1d9b659c84daa8808067d6b945cc1cd36bb731e
+-- hash: 7c56a883ef650c4f04acf59e1de594fee368b11288bcee0d86cf68d7ba9e4203
 
 name:           computor-v1
 version:        0.1.0.0
@@ -47,8 +47,8 @@ library
     , mtl
     , optparse-applicative
     , parsec
-    , prettyprinter ==1.7.*
-    , prettyprinter-ansi-terminal
+    , prettyprinter
+    , prettyprinter-ansi-terminal ==1.1.2
     , text
     , transformers
   default-language: Haskell2010
@@ -68,8 +68,8 @@ executable computor-v1-exe
     , mtl
     , optparse-applicative
     , parsec
-    , prettyprinter ==1.7.*
-    , prettyprinter-ansi-terminal
+    , prettyprinter
+    , prettyprinter-ansi-terminal ==1.1.2
     , text
     , transformers
   default-language: Haskell2010
@@ -91,8 +91,8 @@ test-suite computor-v1-test
     , mtl
     , optparse-applicative
     , parsec
-    , prettyprinter ==1.7.*
-    , prettyprinter-ansi-terminal
+    , prettyprinter
+    , prettyprinter-ansi-terminal ==1.1.2
     , text
     , transformers
   default-language: Haskell2010
