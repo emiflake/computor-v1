@@ -1,0 +1,43 @@
+{
+  "nodes": {
+    "haskell": {
+      "locked": {
+        "lastModified": 1602810962,
+        "narHash": "sha256-HLgt9m4TorbjYNdffM827q4axVSR4cToFnr91SZMYcc=",
+        "owner": "input-output-hk",
+        "repo": "haskell.nix",
+        "rev": "f8443bf2ae2240fdc233eaa435220bfb679d2ef4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "input-output-hk",
+        "repo": "haskell.nix",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1602412739,
+        "narHash": "sha256-wxnfGN0iwttlC+yyuxSz8nJT7uda5FLActSW+NYFnU8=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "ff6fda61600cc60404bab5cb6b18b8636785b7bc",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-20.03",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "haskell": "haskell",
+        "nixpkgs": "nixpkgs"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
